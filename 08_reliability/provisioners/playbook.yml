@@ -1,0 +1,81 @@
+---
+- name: Common tasks for servers
+  hosts: all
+  become: true
+
+  tasks:
+ 
+    - name: Print return information from the previous task
+      ansible.builtin.debug:
+        msg: "Deploy and configure consul chapter 8 rel"
+
+    - name: Copy multiple consul config files using with_items
+      template:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+      with_items:
+        - { src: "files/server.hcl", dest: "/etc/consul.d/server.hcl" }
+        - { src: "files/frontend.hcl", dest: "/etc/consul.d/frontend.hcl" }
+        - { src: "files/backend.hcl", dest: "/etc/consul.d/backend.hcl" }
+        - { src: "files/ingress-gateway.hcl", dest: "/etc/consul.d/ingress-gateway.hcl" }
+        - { src: "files/ingress-gateway-entry.hcl", dest: "/home/vagrant/ingress-gateway.hcl" }
+        - { src: "files/proxy-defaults.hcl", dest: "/home/vagrant/proxy-defaults.hcl" }
+        - { src: "files/deny-all-service-intentions.hcl", dest: "/home/vagrant/deny-all-service-intentions.hcl" }
+        - { src: "files/frontend-service-intentions.hcl", dest: "/home/vagrant/frontend-service-intentions.hcl" }
+        - { src: "files/backend-service-intentions.hcl", dest: "/home/vagrant/backend-service-intentions.hcl" }
+        - { src: "files/backend-service-router.hcl", dest: "/home/vagrant/backend-service-router.hcl" }
+        
+
+
+    - name: Copy file and set permissions
+      ansible.builtin.copy:
+        src: files/prometheus.yml  # Путь к исходному файлу на локальной машине
+        dest: /etc/prometheus/prometheus.yml  # Путь к целевому файлу на удалённом хосте
+        owner: prometheus             # Владелец файла
+        group: prometheus             # Группа файла
+        mode: '0644'            # Права доступа (например, 0644)
+
+
+    - name: Copy systemd service files
+      template:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+      with_items:
+        - { src: "files/frontend.service", dest: "/etc/systemd/system/frontend.service" }
+        - { src: "files/frontend-sidecar-proxy.service", dest: "/etc/systemd/system/frontend-sidecar-proxy.service" }
+        - { src: "files/backend.service", dest: "/etc/systemd/system/backend.service" }
+        - { src: "files/backend-sidecar-proxy.service", dest: "/etc/systemd/system/backend-sidecar-proxy.service" }
+        - { src: "files/ingress-gateway.service", dest: "/etc/systemd/system/ingress-gateway.service" }
+
+    - name: Restart and enable systemd services using with_items
+      ansible.builtin.systemd:
+        name: "{{ item.name }}"
+        daemon_reload: "{{ item.daemon_reload | default(true) }}"
+        state: "{{ item.state | default('restarted') }}"
+        enabled: "{{ item.enabled | default(true) }}"
+      with_items:
+        - { name: "prometheus" }            
+        - { name: "consul" }
+        - { name: "frontend" }
+        - { name: "frontend-sidecar-proxy" }
+        - { name: "backend" }   
+        - { name: "ingress-gateway" }   
+        - { name: "backend-sidecar-proxy" }                
+    
+
+    - name: Write Consul configurations
+      ansible.builtin.command:
+        cmd: "consul config write {{ item }}"
+      loop:
+        - "/home/vagrant/proxy-defaults.hcl"
+        - "/home/vagrant/ingress-gateway.hcl"
+        - "/home/vagrant/deny-all-service-intentions.hcl"
+        - "/home/vagrant/frontend-service-intentions.hcl"
+        - "/home/vagrant/backend-service-intentions.hcl"
+        - "/home/vagrant/backend-service-router.hcl"
+
+
+#frontend-service-intentions.hcl
+
+
+

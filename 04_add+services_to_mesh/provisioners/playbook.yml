@@ -1,0 +1,86 @@
+---
+- name: Common tasks for servers
+  hosts: all
+  become: true
+
+  tasks:
+ 
+    - name: Print return information from the previous task
+      ansible.builtin.debug:
+        msg: "Deploy and configure consul"
+
+    - name: copy consul config
+      template:
+        src: files/server.hcl
+        dest: /etc/consul.d/server.hcl
+
+    - name: copy frontend systemd file
+      template:
+        src: files/frontend.service
+        dest: /etc/systemd/system/frontend.service
+
+    - name: frontend service restart
+      service:
+        name:  frontend
+        state: restarted
+        enabled: true
+
+    - name: copy consul frontend config
+      template:
+        src: files/frontend.hcl
+        dest: /etc/consul.d/frontend.hcl
+
+
+    - name: copy frontend envoy proxy systemd file
+      template:
+        src: files/frontend-sidecar-proxy.service
+        dest: /etc/systemd/system/frontend-sidecar-proxy.service
+
+
+    - name: frontend envoy proxy restart
+      service:
+        name:  frontend-sidecar-proxy
+        state: restarted
+        enabled: true
+
+
+
+    - name: copy backend systemd file
+      template:
+        src: files/backend.service
+        dest: /etc/systemd/system/backend.service
+
+    - name: copy consul backend config
+      template:
+        src: files/backend.hcl
+        dest: /etc/consul.d/backend.hcl
+
+
+
+    - name: backend service restart
+      service:
+        name:  backend
+        state: restarted
+        enabled: true
+
+
+    - name: copy backend envoy proxy systemd file
+      template:
+        src: files/backend-sidecar-proxy.service
+        dest: /etc/systemd/system/backend-sidecar-proxy.service
+
+
+    - name: backend envoy proxy restart
+      service:
+        name:  backend-sidecar-proxy
+        state: restarted
+        enabled: true
+
+
+
+    - name: Consul service restart
+      service:
+        name:  consul
+        state: restarted
+        enabled: true
+

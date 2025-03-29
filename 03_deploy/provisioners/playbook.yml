@@ -1,0 +1,22 @@
+---
+- name: Common tasks for servers
+  hosts: all
+  become: true
+
+  tasks:
+ 
+    - name: Print return information from the previous task
+      ansible.builtin.debug:
+        msg: "Deploy and configure consul"
+
+    - name: copy consul config
+      template:
+        src: files/server.hcl
+        dest: /etc/consul.d/server.hcl
+
+    - name: Consul service restart
+      service:
+        name:  consul
+        state: restarted
+        enabled: true
+
